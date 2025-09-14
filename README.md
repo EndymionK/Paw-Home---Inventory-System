@@ -49,8 +49,8 @@ Follow these steps to run the project locally:
 
 ## Design and Prototyping
 
-- **Figma:** Used for creating UI/UX designs, wireframes, and mockups.  
-- **V0:** Used to implement design prototypes and layouts before final frontend development.  
+- **Figma:** Used for creating UI/UX designs, wireframes, and mockups. [View Prototype](https://www.figma.com/proto/VWADrXFc7WcuMdc7WswGmF/PetManager--Inventory-Management?node-id=0-1&t=eTazxDPPeRIPH4MV-1)  
+- **V0:** Used to implement design prototypes and layouts before final frontend development.
 
 ## Contributions
 
