@@ -42,9 +42,9 @@ Follow these steps to run the project locally:
 
 ## Project Structure
 
-/frontend -> React and Tailwind code
-/backend -> Node.js server and inventory logic
-/public -> Public resources (images, icons, etc.)
+frontend    : React and Tailwind code
+backend     : Node.js server and inventory logic
+public      : Public resources (images, icons, etc.)
 
 
 ## Design and Prototyping
