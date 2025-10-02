@@ -18,8 +18,17 @@ jobs:
       run: |
         git config user.name "github-actions[bot]"
         git config user.email "github-actions[bot]@users.noreply.github.com"
-        git remote add upstream https://github.com/Agiras2/Paw-Home---Inventory-System.git
+        git remote add upstream https://github.com/Agiras2/Paw-Home---Inventory-System.git || true
         git fetch upstream
         git checkout main
-        git merge upstream/main
+        
+        # Check if there are differences to merge
+        if git merge-base upstream/main HEAD >/dev/null 2>&1; then
+          # Repositories have common history, safe to merge
+          git merge upstream/main --no-edit
+        else
+          # Unrelated histories, use --allow-unrelated-histories
+          git merge upstream/main --allow-unrelated-histories --no-edit -X theirs
+        fi
+        
         git push origin main
