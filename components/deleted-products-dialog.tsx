@@ -107,7 +107,7 @@ export function DeletedProductsDialog({
                       <AlertDialogHeader>
                         <AlertDialogTitle>Recuperar Producto</AlertDialogTitle>
                         <AlertDialogDescription>
-                          ¿Estás seguro de que deseas recuperar &quot;{product.name}&quot;? El producto será restaurado al
+                          ¿Estás seguro de que deseas recuperar "{product.name}"? El producto será restaurado al
                           inventario activo con toda su información original.
                         </AlertDialogDescription>
                       </AlertDialogHeader>

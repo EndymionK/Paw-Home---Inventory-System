@@ -142,7 +142,7 @@ export function ProductManagementTable({ products, onDeleteProduct }: ProductMan
                         <AlertDialogHeader>
                           <AlertDialogTitle>Eliminar Producto</AlertDialogTitle>
                           <AlertDialogDescription>
-                            ¿Estás seguro de que deseas eliminar &quot;{product.name}&quot;? El producto será movido al historial
+                            ¿Estás seguro de que deseas eliminar "{product.name}"? El producto será movido al historial
                             de productos eliminados y podrás recuperarlo más tarde si es necesario.
                           </AlertDialogDescription>
                         </AlertDialogHeader>
