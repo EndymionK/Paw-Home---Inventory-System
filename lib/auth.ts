@@ -11,7 +11,7 @@ const ADMIN_USERS = [
   { id: "2", username: "pawadmin", password: "paw2024", role: "admin" as const },
 ]
 
-const SESSION_DURATION = 30 * 60 * 1000 // 30 minutes in milliseconds
+const SESSION_DURATION = 15 * 60 * 1000 // 15 minutes in milliseconds
 
 export interface SessionData {
   user: User
