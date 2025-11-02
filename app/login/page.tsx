@@ -10,7 +10,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Card, CardContent, CardHeader } from "@/components/ui/card"
 import { Alert, AlertDescription } from "@/components/ui/alert"
-import { authenticateUser, isAuthenticated, setAuthUser } from "@/lib/auth"
+import { authenticateUser, isAuthenticated } from "@/lib/auth"
 import { Eye, EyeOff, AlertCircle } from "lucide-react"
 
 export default function LoginPage() {
@@ -35,7 +35,7 @@ export default function LoginPage() {
     try {
       const user = await authenticateUser(username, password)
       if (user) {
-        setAuthUser(user)
+        // authenticateUser ya guarda el token internamente, no es necesario llamar setAuthUser nuevamente
         router.push("/dashboard")
       } else {
         setError("Usuario o contraseña incorrectos")
