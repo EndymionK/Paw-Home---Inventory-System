@@ -1,77 +1,34 @@
 // Simple authentication context for the Paw & Home system
-import { config } from './config'
-
 export interface User {
   id: string
   username: string
   role: "admin"
 }
 
-const SESSION_DURATION = config.sessionDuration
+// Mock user data - in a real app this would come from a database
+const ADMIN_USERS = [
+  { id: "1", username: "admin", password: "admin123", role: "admin" as const },
+  { id: "2", username: "pawadmin", password: "paw2024", role: "admin" as const },
+]
+
+const SESSION_DURATION = 15 * 60 * 1000 // 15 minutes in milliseconds
 
 export interface SessionData {
   user: User
-  token: string
   timestamp: number
   expiresAt: number
 }
 
-// Helper function to decode JWT token (simple base64 decode)
-function decodeJWT(token: string): { username: string; rol: string } | null {
-  try {
-    const parts = token.split('.')
-    if (parts.length !== 3) return null
-    
-    const payload = JSON.parse(atob(parts[1]))
-    return {
-      username: payload.sub || payload.username,
-      rol: payload.rol || payload.role || 'ADMIN'
-    }
-  } catch {
-    return null
-  }
-}
-
 export async function authenticateUser(username: string, password: string): Promise<User | null> {
-  try {
-    const response = await fetch(`${config.apiUrl}/api/auth/login`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({ username, password })
-    })
+  // Simulate API delay
+  await new Promise((resolve) => setTimeout(resolve, 500))
 
-    if (!response.ok) {
-      // Mensaje genérico de error (HU-6.1 seguridad)
-      return null
-    }
-
-    const data = await response.json()
-    const token = data.token
-
-    if (!token) {
-      return null
-    }
-
-    // Decodificar el token para obtener información del usuario
-    const decoded = decodeJWT(token)
-    if (!decoded) {
-      return null
-    }
-
-    const user: User = {
-      id: decoded.username, // Usamos username como ID
-      username: decoded.username,
-      role: "admin" // Por ahora todos son admin según el sistema actual
-    }
-
-    setAuthUser(user, token)
+  const user = ADMIN_USERS.find((u) => u.username === username && u.password === password)
+  if (user) {
+    setAuthUser(user)
     return user
-  } catch (error) {
-    console.error('Error al autenticar:', error)
-    return null
   }
+  return null
 }
 
 export function isAuthenticated(): boolean {
@@ -104,10 +61,9 @@ export function getCurrentUser(): User | null {
   return sessionData.user
 }
 
-export function setAuthUser(user: User, token?: string): void {
+export function setAuthUser(user: User): void {
   const sessionData: SessionData = {
     user,
-    token: token || '',
     timestamp: Date.now(),
     expiresAt: Date.now() + SESSION_DURATION,
   }
@@ -118,11 +74,6 @@ export function logout(): void {
   localStorage.removeItem("paw-auth-session")
   // Also remove old auth key for backward compatibility
   localStorage.removeItem("paw-auth-user")
-}
-
-export function getAuthToken(): string | null {
-  const sessionData = getSessionData()
-  return sessionData?.token || null
 }
 
 function getSessionData(): SessionData | null {
@@ -155,7 +106,7 @@ export function refreshSession(): boolean {
     return false
   }
 
-  // Extend session (keep the same token)
-  setAuthUser(sessionData.user, sessionData.token)
+  // Extend session
+  setAuthUser(sessionData.user)
   return true
 }

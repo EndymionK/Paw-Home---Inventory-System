@@ -5,24 +5,24 @@ import { Bell, Package, AlertTriangle } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 import { Badge } from "@/components/ui/badge"
-import { fetchNotificaciones, type NotificacionBackend } from "@/lib/products"
+import { checkLowStockNotifications } from "@/lib/products"
 
 export function NotificationSystem() {
-  const [notificaciones, setNotificaciones] = useState<NotificacionBackend[]>([])
+  const [notifications, setNotifications] = useState<{ product: any; message: string }[]>([])
   const [isOpen, setIsOpen] = useState(false)
   const [unreadCount, setUnreadCount] = useState(0)
 
   useEffect(() => {
-    const checkNotifications = async () => {
-      const notificacionesActivas = await fetchNotificaciones()
-      setNotificaciones(notificacionesActivas)
+    const checkNotifications = () => {
+      const lowStockNotifications = checkLowStockNotifications()
+      setNotifications(lowStockNotifications)
       if (!isOpen) {
-        setUnreadCount(notificacionesActivas.length)
+        setUnreadCount(lowStockNotifications.length)
       }
     }
 
     checkNotifications()
-    const interval = setInterval(checkNotifications, 30000) // Actualizar cada 30 segundos
+    const interval = setInterval(checkNotifications, 30000)
 
     return () => clearInterval(interval)
   }, [isOpen])
@@ -49,15 +49,15 @@ export function NotificationSystem() {
       <DropdownMenuContent align="end" className="w-80 max-h-96 overflow-y-auto">
         <div className="p-3 border-b">
           <h3 className="font-semibold text-sm text-gray-900">Notificaciones</h3>
-          {notificaciones.length > 0 && (
+          {notifications.length > 0 && (
             <p className="text-xs text-gray-500 mt-1">
-              {notificaciones.length} {notificaciones.length === 1 ? "notificación nueva" : "notificaciones nuevas"}
+              {notifications.length} {notifications.length === 1 ? "notificación nueva" : "notificaciones nuevas"}
             </p>
           )}
         </div>
 
         <div className="max-h-64 overflow-y-auto">
-          {notificaciones.length === 0 ? (
+          {notifications.length === 0 ? (
             <div className="p-4 text-center">
               <Package className="w-8 h-8 mx-auto text-gray-400 mb-2" />
               <p className="text-sm text-gray-500">No hay notificaciones</p>
@@ -65,34 +65,30 @@ export function NotificationSystem() {
             </div>
           ) : (
             <div className="py-2">
-              {notificaciones.map((notificacion) => (
+              {notifications.map((notification, index) => (
                 <div
-                  key={notificacion.id}
+                  key={`${notification.product.id}-${index}`}
                   className="flex items-start gap-3 p-3 hover:bg-gray-50 border-b last:border-b-0"
                 >
                   <div className="flex-shrink-0 mt-0.5">
                     <AlertTriangle
-                      className={`w-4 h-4 ${notificacion.stockActual === 0 ? "text-red-500" : "text-yellow-500"}`}
+                      className={`w-4 h-4 ${notification.product.stock === 0 ? "text-red-500" : "text-yellow-500"}`}
                       aria-hidden="true"
                     />
                   </div>
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-medium text-gray-900 truncate">
-                      {notificacion.stockActual === 0 ? "Producto agotado" : "Producto por debajo del stock mínimo"}
+                      {notification.product.stock === 0 ? "Producto agotado" : "Producto por debajo del stock mínimo"}
                     </p>
-                    <p className="text-sm text-gray-600 mt-1">
-                      {notificacion.stockActual === 0
-                        ? `${notificacion.nombreProducto} está agotado`
-                        : `${notificacion.nombreProducto} tiene stock bajo (${notificacion.stockActual} unidades)`}
-                    </p>
+                    <p className="text-sm text-gray-600 mt-1">{notification.message}</p>
                     <div className="flex items-center gap-2 mt-2">
                       <Badge
-                        variant={notificacion.stockActual === 0 ? "destructive" : "secondary"}
+                        variant={notification.product.stock === 0 ? "destructive" : "secondary"}
                         className="text-xs"
                       >
-                        {notificacion.stockActual === 0 ? "Sin stock" : `${notificacion.stockActual} unidades`}
+                        {notification.product.stock === 0 ? "Sin stock" : `${notification.product.stock} unidades`}
                       </Badge>
-                      <span className="text-xs text-gray-400">Mínimo: {notificacion.umbralMinimo}</span>
+                      <span className="text-xs text-gray-400">Mínimo: {notification.product.minStock}</span>
                     </div>
                   </div>
                 </div>
@@ -101,7 +97,7 @@ export function NotificationSystem() {
           )}
         </div>
 
-        {notificaciones.length > 0 && (
+        {notifications.length > 0 && (
           <div className="p-3 border-t bg-gray-50">
             <p className="text-xs text-gray-600 text-center">
               Revisa la gestión de productos para actualizar el inventario
