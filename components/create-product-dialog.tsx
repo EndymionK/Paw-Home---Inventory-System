@@ -63,7 +63,7 @@ export function CreateProductDialog({ open, onOpenChange, onCreateProduct }: Cre
 
     try {
       // Validate form
-      if (!formData.name.trim() || !formData.supplier.trim() || !formData.characteristics.trim()) {
+      if (!formData.name.trim() || !formData.supplier.trim()) {
         throw new Error("Todos los campos obligatorios deben ser completados")
       }
 
@@ -86,14 +86,22 @@ export function CreateProductDialog({ open, onOpenChange, onCreateProduct }: Cre
       // Simulate API delay
       await new Promise((resolve) => setTimeout(resolve, 500))
 
-      const newProduct = {
+      const newProduct: any = {
         name: formData.name.trim(),
         supplier: formData.supplier.trim(),
         price: price,
         stock: stock,
         minStock: minStock,
-        image: formData.image || "/placeholder.svg?key=new-product",
-        characteristics: formData.characteristics.trim(),
+      }
+
+      // Solo agregar image si tiene valor
+      if (formData.image.trim()) {
+        newProduct.image = formData.image.trim()
+      }
+
+      // Solo agregar characteristics si tiene valor
+      if (formData.characteristics.trim()) {
+        newProduct.characteristics = formData.characteristics.trim()
       }
 
       onCreateProduct(newProduct)
@@ -209,14 +217,13 @@ export function CreateProductDialog({ open, onOpenChange, onCreateProduct }: Cre
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="create-characteristics">Características *</Label>
+            <Label htmlFor="create-characteristics">Características</Label>
             <Textarea
               id="create-characteristics"
               value={formData.characteristics}
               onChange={(e) => handleInputChange("characteristics", e.target.value)}
-              placeholder="Describe las características del producto..."
+              placeholder="Describe las características del producto... (opcional)"
               rows={3}
-              required
             />
           </div>
 
