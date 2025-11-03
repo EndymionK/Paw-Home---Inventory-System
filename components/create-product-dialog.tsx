@@ -38,6 +38,21 @@ export function CreateProductDialog({ open, onOpenChange, onCreateProduct }: Cre
     characteristics: "",
   })
 
+  // Función hash para convertir string de proveedor a entero consistente
+  const hashSupplierToInt = (supplier: string): number => {
+    const normalized = supplier.toLowerCase().trim()
+    let hash = 0
+    
+    for (let i = 0; i < normalized.length; i++) {
+      const char = normalized.charCodeAt(i)
+      hash = ((hash << 5) - hash) + char
+      hash = hash & hash // Convert to 32bit integer
+    }
+    
+    // Asegurar que sea un número positivo
+    return Math.abs(hash)
+  }
+
   const handleInputChange = (field: string, value: string) => {
     setFormData((prev) => ({ ...prev, [field]: value }))
     setError("")
@@ -88,7 +103,7 @@ export function CreateProductDialog({ open, onOpenChange, onCreateProduct }: Cre
 
       const newProduct: any = {
         name: formData.name.trim(),
-        supplier: formData.supplier.trim(),
+        supplier: hashSupplierToInt(formData.supplier),
         price: price,
         stock: stock,
         minStock: minStock,
