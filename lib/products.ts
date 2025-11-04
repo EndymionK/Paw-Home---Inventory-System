@@ -1,4 +1,31 @@
 // Product data types and mock data for the inventory system
+import { config } from "./config"
+import { getAuthToken } from "./auth"
+
+// Interfaz para productos del backend
+export interface ProductoBackend {
+  codigo: number
+  nombre: string
+  stock: number
+  precio: number
+  proveedorNombre: string
+  umbralMinimo: number | null
+  stockBajo: boolean
+  imagen: string | null
+  descripcion: string | null
+}
+
+// Interfaz para notificaciones del backend
+export interface NotificacionBackend {
+  id: number
+  idProducto: number
+  nombreProducto: string
+  stockActual: number
+  umbralMinimo: number
+  fechaCreacion: string
+  eliminada: boolean
+}
+
 export interface Product {
   id: string
   name: string
@@ -11,6 +38,7 @@ export interface Product {
   isDeleted: boolean
   createdAt: Date
   updatedAt: Date
+  stockBajo?: boolean
 }
 
 // Mock product data
@@ -161,6 +189,230 @@ export function deleteProduct(id: string): boolean {
     return true
   }
   return false
+}
+
+// ============================================
+// API Functions (Backend Integration)
+// ============================================
+
+/**
+ * Fetch all products from backend
+ */
+export async function fetchProducts(): Promise<ProductoBackend[]> {
+  const token = getAuthToken()
+  if (!token) {
+    throw new Error("No hay token de autenticación")
+  }
+
+  const response = await fetch(`${config.apiUrl}/api/inventory/productos`, {
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  })
+
+  if (!response.ok) {
+    throw new Error(`Error al obtener productos: ${response.status}`)
+  }
+
+  return response.json()
+}
+
+/**
+ * Fetch products with low stock
+ */
+export async function fetchLowStockProducts(): Promise<ProductoBackend[]> {
+  const token = getAuthToken()
+  if (!token) {
+    throw new Error("No hay token de autenticación")
+  }
+
+  const response = await fetch(`${config.apiUrl}/api/inventory/productos/stock-bajo`, {
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  })
+
+  if (!response.ok) {
+    throw new Error(`Error al obtener productos con stock bajo: ${response.status}`)
+  }
+
+  return response.json()
+}
+
+/**
+ * Fetch active notifications
+ */
+export async function fetchNotificaciones(): Promise<NotificacionBackend[]> {
+  const token = getAuthToken()
+  if (!token) {
+    throw new Error("No hay token de autenticación")
+  }
+
+  const response = await fetch(`${config.apiUrl}/api/inventory/notificaciones`, {
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  })
+
+  if (!response.ok) {
+    throw new Error(`Error al obtener notificaciones: ${response.status}`)
+  }
+
+  return response.json()
+}
+
+/**
+ * Create a new product
+ */
+export async function createProduct(data: {
+  nombre: string
+  cantidad: number
+  precio: number
+  idProveedor: number
+  umbralMinimo?: number
+  imagen?: string
+  descripcion?: string
+}): Promise<ProductoBackend> {
+  const token = getAuthToken()
+  if (!token) {
+    throw new Error("No hay token de autenticación")
+  }
+
+  const response = await fetch(`${config.apiUrl}/api/inventory/productos`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${token}`,
+    },
+    body: JSON.stringify(data),
+  })
+
+  if (!response.ok) {
+    const errorData = await response.json().catch(() => ({}))
+    throw new Error(errorData.mensaje || `Error al crear producto: ${response.status}`)
+  }
+
+  return response.json()
+}
+
+/**
+ * Delete a product (soft delete)
+ */
+export async function deleteProductAPI(codigo: number): Promise<void> {
+  const token = getAuthToken()
+  if (!token) {
+    throw new Error("No hay token de autenticación")
+  }
+
+  const response = await fetch(`${config.apiUrl}/api/inventory/productos/${codigo}`, {
+    method: "DELETE",
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  })
+
+  if (!response.ok) {
+    const errorData = await response.json().catch(() => ({}))
+    throw new Error(errorData.mensaje || `Error al eliminar producto: ${response.status}`)
+  }
+}
+
+/**
+ * Increase product stock
+ */
+export async function increaseStock(codigo: number, cantidad: number): Promise<ProductoBackend> {
+  const token = getAuthToken()
+  if (!token) {
+    throw new Error("No hay token de autenticación")
+  }
+
+  const response = await fetch(`${config.apiUrl}/api/inventory/productos/${codigo}/aumentar-stock`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${token}`,
+    },
+    body: JSON.stringify({ cantidad }),
+  })
+
+  if (!response.ok) {
+    const errorData = await response.json().catch(() => ({}))
+    throw new Error(errorData.mensaje || `Error al aumentar stock: ${response.status}`)
+  }
+
+  return response.json()
+}
+
+/**
+ * Decrease product stock
+ */
+export async function decreaseStock(codigo: number, cantidad: number): Promise<ProductoBackend> {
+  const token = getAuthToken()
+  if (!token) {
+    throw new Error("No hay token de autenticación")
+  }
+
+  const response = await fetch(`${config.apiUrl}/api/inventory/productos/${codigo}/disminuir-stock`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${token}`,
+    },
+    body: JSON.stringify({ cantidad }),
+  })
+
+  if (!response.ok) {
+    const errorData = await response.json().catch(() => ({}))
+    throw new Error(errorData.mensaje || `Error al disminuir stock: ${response.status}`)
+  }
+
+  return response.json()
+}
+
+/**
+ * Update minimum threshold for a product
+ */
+export async function updateUmbralMinimo(codigo: number, umbralMinimo: number): Promise<ProductoBackend> {
+  const token = getAuthToken()
+  if (!token) {
+    throw new Error("No hay token de autenticación")
+  }
+
+  const response = await fetch(`${config.apiUrl}/api/inventory/productos/${codigo}/umbral-minimo`, {
+    method: "PUT",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${token}`,
+    },
+    body: JSON.stringify({ umbralMinimo }),
+  })
+
+  if (!response.ok) {
+    const errorData = await response.json().catch(() => ({}))
+    throw new Error(errorData.mensaje || `Error al actualizar umbral mínimo: ${response.status}`)
+  }
+
+  return response.json()
+}
+
+/**
+ * Convert ProductoBackend to Product (frontend format)
+ */
+export function convertBackendToFrontend(backend: ProductoBackend): Product {
+  return {
+    id: backend.codigo.toString(),
+    name: backend.nombre,
+    supplier: backend.proveedorNombre,
+    price: backend.precio,
+    stock: backend.stock,
+    minStock: backend.umbralMinimo || 0,
+    image: backend.imagen || "/placeholder.svg",
+    characteristics: backend.descripcion || "",
+    isDeleted: false,
+    createdAt: new Date(),
+    updatedAt: new Date(),
+    stockBajo: backend.stockBajo,
+  }
 }
 
 export function restoreProduct(id: string): boolean {

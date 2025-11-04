@@ -6,7 +6,7 @@ import { useEffect, useState } from "react"
 import { useRouter, useParams } from "next/navigation"
 import Image from "next/image"
 import { isAuthenticated } from "@/lib/auth"
-import { getProductById, type Product, MOCK_PRODUCTS } from "@/lib/products"
+import { type Product, fetchProducts, convertBackendToFrontend, updateUmbralMinimo } from "@/lib/products"
 import { DashboardLayout } from "@/components/dashboard-layout"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -41,24 +41,34 @@ export default function EditProductPage() {
       return
     }
 
-    const productId = params.id as string
-    const foundProduct = getProductById(productId)
-
-    if (foundProduct) {
-      setProduct(foundProduct)
-      setFormData({
-        name: foundProduct.name,
-        supplier: foundProduct.supplier,
-        price: foundProduct.price.toString(),
-        stock: foundProduct.stock.toString(),
-        minStock: foundProduct.minStock.toString(),
-        image: foundProduct.image,
-        characteristics: foundProduct.characteristics,
-      })
-    }
-
-    setIsLoading(false)
+    loadProduct()
   }, [router, params.id])
+
+  const loadProduct = async () => {
+    try {
+      const productId = params.id as string
+      const backendProducts = await fetchProducts()
+      const products = backendProducts.map(convertBackendToFrontend)
+      const foundProduct = products.find((p) => p.id === productId)
+
+      if (foundProduct) {
+        setProduct(foundProduct)
+        setFormData({
+          name: foundProduct.name,
+          supplier: foundProduct.supplier,
+          price: foundProduct.price.toString(),
+          stock: foundProduct.stock.toString(),
+          minStock: foundProduct.minStock.toString(),
+          image: foundProduct.image,
+          characteristics: foundProduct.characteristics,
+        })
+      }
+    } catch (error) {
+      console.error("Error al cargar producto:", error)
+    } finally {
+      setIsLoading(false)
+    }
+  }
 
   const handleInputChange = (field: string, value: string) => {
     setFormData((prev) => ({ ...prev, [field]: value }))
@@ -92,25 +102,20 @@ export default function EditProductPage() {
         throw new Error("El stock mínimo debe ser un número válido mayor o igual a 0")
       }
 
-      // Simulate API delay
-      await new Promise((resolve) => setTimeout(resolve, 1000))
-
-      // Update the product in mock data
-      const productIndex = MOCK_PRODUCTS.findIndex((p) => p.id === product?.id)
-      if (productIndex !== -1) {
-        MOCK_PRODUCTS[productIndex] = {
-          ...MOCK_PRODUCTS[productIndex],
-          name: formData.name.trim(),
-          supplier: formData.supplier.trim(),
-          price: price,
-          stock: stock,
-          minStock: minStock,
-          image: formData.image || MOCK_PRODUCTS[productIndex].image,
-          characteristics: formData.characteristics.trim(),
-          updatedAt: new Date(),
-        }
+      // Convert product ID to codigo (number)
+      const codigo = parseInt(product?.id || "")
+      if (isNaN(codigo)) {
+        throw new Error("ID de producto inválido")
       }
 
+      // Check if minStock changed and update via API
+      if (product && minStock !== product.minStock) {
+        await updateUmbralMinimo(codigo, minStock)
+      }
+
+      // TODO: Implement full product update API endpoint
+      // For now, only umbralMinimo is updated via API
+      
       setMessage({ type: "success", text: "Producto actualizado exitosamente" })
 
       // Redirect after a short delay
@@ -118,6 +123,7 @@ export default function EditProductPage() {
         router.push(`/product/${product?.id}`)
       }, 1500)
     } catch (error) {
+      console.error("Error al guardar producto:", error)
       setMessage({
         type: "error",
         text: error instanceof Error ? error.message : "Error al guardar los cambios",

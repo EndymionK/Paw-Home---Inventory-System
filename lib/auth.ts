@@ -110,3 +110,8 @@ export function refreshSession(): boolean {
   setAuthUser(sessionData.user)
   return true
 }
+
+export function getAuthToken(): string | null {
+  if (typeof window === "undefined") return null
+  return localStorage.getItem("paw-auth-token")
+}
