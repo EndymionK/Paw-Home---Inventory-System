@@ -38,6 +38,21 @@ export function CreateProductDialog({ open, onOpenChange, onCreateProduct }: Cre
     characteristics: "",
   })
 
+  // Función hash para convertir string de proveedor a entero consistente
+  const hashSupplierToInt = (supplier: string): number => {
+    const normalized = supplier.toLowerCase().trim()
+    let hash = 0
+    
+    for (let i = 0; i < normalized.length; i++) {
+      const char = normalized.charCodeAt(i)
+      hash = ((hash << 5) - hash) + char
+      hash = hash & hash // Convert to 32bit integer
+    }
+    
+    // Asegurar que sea un número positivo
+    return Math.abs(hash)
+  }
+
   const handleInputChange = (field: string, value: string) => {
     setFormData((prev) => ({ ...prev, [field]: value }))
     setError("")
@@ -63,7 +78,7 @@ export function CreateProductDialog({ open, onOpenChange, onCreateProduct }: Cre
 
     try {
       // Validate form
-      if (!formData.name.trim() || !formData.supplier.trim() || !formData.characteristics.trim()) {
+      if (!formData.name.trim() || !formData.supplier.trim()) {
         throw new Error("Todos los campos obligatorios deben ser completados")
       }
 
@@ -86,14 +101,22 @@ export function CreateProductDialog({ open, onOpenChange, onCreateProduct }: Cre
       // Simulate API delay
       await new Promise((resolve) => setTimeout(resolve, 500))
 
-      const newProduct = {
+      const newProduct: any = {
         name: formData.name.trim(),
-        supplier: formData.supplier.trim(),
+        supplier: hashSupplierToInt(formData.supplier),
         price: price,
         stock: stock,
         minStock: minStock,
-        image: formData.image || "/placeholder.svg?key=new-product",
-        characteristics: formData.characteristics.trim(),
+      }
+
+      // Solo agregar image si tiene valor
+      if (formData.image.trim()) {
+        newProduct.image = formData.image.trim()
+      }
+
+      // Solo agregar characteristics si tiene valor
+      if (formData.characteristics.trim()) {
+        newProduct.characteristics = formData.characteristics.trim()
       }
 
       onCreateProduct(newProduct)
@@ -209,14 +232,13 @@ export function CreateProductDialog({ open, onOpenChange, onCreateProduct }: Cre
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="create-characteristics">Características *</Label>
+            <Label htmlFor="create-characteristics">Características</Label>
             <Textarea
               id="create-characteristics"
               value={formData.characteristics}
               onChange={(e) => handleInputChange("characteristics", e.target.value)}
-              placeholder="Describe las características del producto..."
+              placeholder="Describe las características del producto... (opcional)"
               rows={3}
-              required
             />
           </div>
 
