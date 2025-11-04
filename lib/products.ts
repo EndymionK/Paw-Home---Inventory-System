@@ -1,29 +1,4 @@
 // Product data types and mock data for the inventory system
-import { config } from "./config"
-import { getAuthToken } from "./auth"
-
-// Interfaz para productos del backend
-export interface ProductoBackend {
-  codigo: number
-  nombre: string
-  stock: number
-  precio: number
-  proveedor: string
-  umbralMinimo: number | null
-  stockBajo: boolean
-}
-
-// Interfaz para notificaciones del backend
-export interface NotificacionBackend {
-  id: number
-  idProducto: number
-  nombreProducto: string
-  stockActual: number
-  umbralMinimo: number
-  fechaCreacion: string
-  eliminada: boolean
-}
-
 export interface Product {
   id: string
   name: string
@@ -36,7 +11,6 @@ export interface Product {
   isDeleted: boolean
   createdAt: Date
   updatedAt: Date
-  stockBajo?: boolean // Nuevo campo desde el backend
 }
 
 // Mock product data
@@ -213,125 +187,5 @@ export function getInventoryStats() {
     outOfStockCount,
     availableCount,
     deletedCount: getDeletedProducts().length,
-  }
-}
-
-// ============================================
-// FUNCIONES DE INTEGRACIÓN CON BACKEND
-// ============================================
-
-/**
- * Convierte un producto del backend al formato del frontend
- */
-function convertirProductoBackend(producto: ProductoBackend): Product {
-  return {
-    id: producto.codigo.toString(),
-    name: producto.nombre,
-    supplier: producto.proveedor,
-    price: producto.precio,
-    stock: producto.stock,
-    minStock: producto.umbralMinimo || 0,
-    image: "/placeholder.svg", // El backend no maneja imágenes aún
-    characteristics: "", // El backend no tiene este campo
-    isDeleted: false,
-    createdAt: new Date(),
-    updatedAt: new Date(),
-    stockBajo: producto.stockBajo,
-  }
-}
-
-/**
- * Obtiene todos los productos desde el backend
- */
-export async function fetchProducts(): Promise<Product[]> {
-  try {
-    const token = getAuthToken()
-    if (!token) {
-      console.error("No hay token de autenticación")
-      return []
-    }
-
-    const response = await fetch(`${config.apiUrl}/api/inventory/productos`, {
-      method: "GET",
-      headers: {
-        Authorization: `Bearer ${token}`,
-        "Content-Type": "application/json",
-      },
-    })
-
-    if (!response.ok) {
-      console.error(`Error al obtener productos: ${response.status}`)
-      return []
-    }
-
-    const productos: ProductoBackend[] = await response.json()
-    return productos.map(convertirProductoBackend)
-  } catch (error) {
-    console.error("Error al conectar con el backend:", error)
-    return []
-  }
-}
-
-/**
- * Obtiene productos con stock bajo desde el backend
- */
-export async function fetchLowStockProducts(): Promise<Product[]> {
-  try {
-    const token = getAuthToken()
-    if (!token) {
-      console.error("No hay token de autenticación")
-      return []
-    }
-
-    const response = await fetch(`${config.apiUrl}/api/inventory/productos/stock-bajo`, {
-      method: "GET",
-      headers: {
-        Authorization: `Bearer ${token}`,
-        "Content-Type": "application/json",
-      },
-    })
-
-    if (!response.ok) {
-      console.error(`Error al obtener productos con stock bajo: ${response.status}`)
-      return []
-    }
-
-    const productos: ProductoBackend[] = await response.json()
-    return productos.map(convertirProductoBackend)
-  } catch (error) {
-    console.error("Error al conectar con el backend:", error)
-    return []
-  }
-}
-
-/**
- * Obtiene notificaciones activas desde el backend
- */
-export async function fetchNotificaciones(): Promise<NotificacionBackend[]> {
-  try {
-    const token = getAuthToken()
-    if (!token) {
-      console.error("No hay token de autenticación")
-      return []
-    }
-
-    const response = await fetch(`${config.apiUrl}/api/inventory/notificaciones`, {
-      method: "GET",
-      headers: {
-        Authorization: `Bearer ${token}`,
-        "Content-Type": "application/json",
-      },
-    })
-
-    if (!response.ok) {
-      console.error(`Error al obtener notificaciones: ${response.status}`)
-      return []
-    }
-
-    const notificaciones: NotificacionBackend[] = await response.json()
-    return notificaciones
-  } catch (error) {
-    console.error("Error al conectar con el backend:", error)
-    return []
   }
 }

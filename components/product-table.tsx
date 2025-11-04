@@ -4,7 +4,6 @@ import Image from "next/image"
 import { Badge } from "@/components/ui/badge"
 import type { Product } from "@/lib/products"
 import { cn } from "@/lib/utils"
-import { AlertTriangle } from "lucide-react"
 
 interface ProductTableProps {
   products: Product[]
@@ -21,9 +20,7 @@ export function ProductTable({
 }: ProductTableProps) {
   const getStockStatus = (product: Product) => {
     if (product.stock === 0) return { label: "No disponible", variant: "destructive" as const }
-    // Usar el campo stockBajo del backend si está disponible
-    if (product.stockBajo || product.stock <= product.minStock)
-      return { label: "Stock bajo", variant: "secondary" as const }
+    if (product.stock <= product.minStock) return { label: "Stock bajo", variant: "secondary" as const }
     return { label: "Disponible", variant: "default" as const }
   }
 
@@ -58,14 +55,13 @@ export function ProductTable({
         <tbody>
           {products.map((product) => {
             const stockStatus = getStockStatus(product)
-            const tieneStockBajo = product.stockBajo || product.stock <= product.minStock
             return (
               <tr
                 key={product.id}
                 onClick={() => onProductClick(product.id)}
                 className={cn(
                   "border-b border-gray-100 hover:bg-paw-primary/5 cursor-pointer transition-colors",
-                  highlightLowStock && tieneStockBajo && "bg-paw-coral/10",
+                  highlightLowStock && product.stock <= product.minStock && "bg-paw-coral/10",
                 )}
               >
                 <td className="py-4 px-4">
@@ -90,18 +86,10 @@ export function ProductTable({
                 {showStock && (
                   <>
                     <td className="py-4 px-4 text-sm text-gray-700">
-                      <div className="flex items-center gap-2">
-                        {tieneStockBajo && (
-                          <AlertTriangle
-                            className="w-4 h-4 text-paw-coral flex-shrink-0"
-                            aria-label="Alerta de stock bajo"
-                          />
-                        )}
-                        <span className={cn("font-medium", tieneStockBajo && "text-paw-coral")}>
-                          {product.stock} unidades
-                        </span>
-                      </div>
-                      {tieneStockBajo && product.minStock > 0 && (
+                      <span className={cn("font-medium", product.stock <= product.minStock && "text-paw-coral")}>
+                        {product.stock} unidades
+                      </span>
+                      {product.stock <= product.minStock && (
                         <p className="text-xs text-paw-coral mt-1">Mín: {product.minStock}</p>
                       )}
                     </td>
