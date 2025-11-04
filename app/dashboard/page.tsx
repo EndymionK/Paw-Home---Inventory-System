@@ -3,20 +3,44 @@
 import { useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
 import { isAuthenticated, getCurrentUser } from "@/lib/auth"
-import { getProducts, getTopSellingProducts, getLowStockProducts } from "@/lib/products"
+import { fetchProducts, fetchLowStockProducts, convertBackendToFrontend, type Product } from "@/lib/products"
 import { DashboardLayout } from "@/components/dashboard-layout"
 import { DashboardTabs } from "@/components/dashboard-tabs"
 
 export default function DashboardPage() {
   const router = useRouter()
   const [isLoading, setIsLoading] = useState(true)
+  const [allProducts, setAllProducts] = useState<Product[]>([])
+  const [lowStockProducts, setLowStockProducts] = useState<Product[]>([])
 
   useEffect(() => {
     if (!isAuthenticated()) {
       router.push("/login")
-    } else {
-      setIsLoading(false)
+      return
     }
+
+    const loadDashboardData = async () => {
+      try {
+        setIsLoading(true)
+        
+        // Cargar todos los productos
+        const backendProducts = await fetchProducts()
+        const convertedProducts = backendProducts.map(convertBackendToFrontend)
+        setAllProducts(convertedProducts)
+
+        // Cargar productos con stock bajo
+        const backendLowStock = await fetchLowStockProducts()
+        const convertedLowStock = backendLowStock.map(convertBackendToFrontend)
+        setLowStockProducts(convertedLowStock)
+
+      } catch (error) {
+        console.error("Error cargando datos del dashboard:", error)
+      } finally {
+        setIsLoading(false)
+      }
+    }
+
+    loadDashboardData()
   }, [router])
 
   if (isLoading) {
@@ -31,9 +55,10 @@ export default function DashboardPage() {
   }
 
   const currentUser = getCurrentUser()
-  const allProducts = getProducts()
-  const topSellingProducts = getTopSellingProducts()
-  const lowStockProducts = getLowStockProducts()
+  
+  // TODO: Implementar ranking de productos más vendidos desde backend
+  // Por ahora usamos todos los productos ordenados por stock (simulación)
+  const topSellingProducts = [...allProducts].sort((a, b) => b.stock - a.stock).slice(0, 5)
 
   return (
     <DashboardLayout>

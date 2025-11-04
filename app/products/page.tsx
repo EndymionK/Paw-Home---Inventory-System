@@ -4,11 +4,6 @@ import { useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
 import { isAuthenticated } from "@/lib/auth"
 import {
-  getProducts,
-  getDeletedProducts,
-  deleteProduct,
-  restoreProduct,
-  MOCK_PRODUCTS,
   type Product,
   createProduct,
   fetchProducts,
@@ -48,12 +43,17 @@ export default function ProductsPage() {
     setIsLoading(false)
   }, [router])
 
-  const loadProducts = () => {
-    const activeProducts = getProducts()
-    const deletedProductsList = getDeletedProducts()
-    setProducts(activeProducts)
-    setDeletedProducts(deletedProductsList)
-    setFilteredProducts(activeProducts)
+  const loadProducts = async () => {
+    try {
+      const backendProducts = await fetchProducts()
+      const activeProducts = backendProducts.map(convertBackendToFrontend)
+      setProducts(activeProducts)
+      setFilteredProducts(activeProducts)
+      // TODO: Implementar endpoint para productos eliminados
+      setDeletedProducts([])
+    } catch (error) {
+      console.error("Error cargando productos:", error)
+    }
   }
 
   // Filter and search products
@@ -117,7 +117,14 @@ export default function ProductsPage() {
   }
 
   const handleRestoreProduct = async (productId: string) => {
-    try {
+    // TODO: Implementar endpoint de restauración en el backend
+    setMessage({ 
+      type: "error", 
+      text: "Función de restauración no disponible. Pendiente implementación en backend." 
+    })
+    setTimeout(() => setMessage(null), 3000)
+    
+    /* try {
       const success = restoreProduct(productId)
       if (success) {
         loadProducts()
@@ -129,7 +136,7 @@ export default function ProductsPage() {
     } catch (error) {
       setMessage({ type: "error", text: "Error al recuperar el producto" })
       setTimeout(() => setMessage(null), 3000)
-    }
+    } */
   }
 
   const handleCreateProduct = async (newProduct: Omit<Product, "id" | "isDeleted" | "createdAt" | "updatedAt">) => {

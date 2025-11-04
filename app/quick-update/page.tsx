@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
 import { isAuthenticated } from "@/lib/auth"
-import { getTopSellingProducts, updateProductStock, SALES_DATA, MOCK_PRODUCTS, type Product, fetchProducts, convertBackendToFrontend, increaseStock, decreaseStock } from "@/lib/products"
+import { SALES_DATA, type Product, fetchProducts, convertBackendToFrontend, increaseStock, decreaseStock } from "@/lib/products"
 import { DashboardLayout } from "@/components/dashboard-layout"
 import { QuickUpdateCard } from "@/components/quick-update-card"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
@@ -85,15 +85,19 @@ export default function QuickUpdatePage() {
       const backendProducts = await fetchProducts()
       const convertedProducts = backendProducts.map(convertBackendToFrontend)
       
-      // Filter for top/least selling (keeping current logic for now)
-      const topSelling = getTopSellingProducts()
+      // Filter for top/least selling using SALES_DATA
+      const topSelling = SALES_DATA.sort((a, b) => b.sales - a.sales)
+        .slice(0, 5)
+        .map((sale) => convertedProducts.find((p) => p.id === sale.productId))
+        .filter(Boolean) as Product[]
+
       const leastSelling = SALES_DATA.sort((a, b) => a.sales - b.sales)
         .slice(0, 5)
         .map((sale) => convertedProducts.find((p) => p.id === sale.productId))
         .filter(Boolean) as Product[]
 
-      setTopSellingProducts(topSelling.filter((p) => !p.isDeleted))
-      setLeastSellingProducts(leastSelling.filter((p) => !p.isDeleted))
+      setTopSellingProducts(topSelling)
+      setLeastSellingProducts(leastSelling)
 
       setMessage({
         type: "success",
