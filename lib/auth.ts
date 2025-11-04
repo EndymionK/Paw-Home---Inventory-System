@@ -20,15 +20,41 @@ export interface SessionData {
 }
 
 export async function authenticateUser(username: string, password: string): Promise<User | null> {
-  // Simulate API delay
-  await new Promise((resolve) => setTimeout(resolve, 500))
+  try {
+    const apiUrl = process.env.NEXT_PUBLIC_API_URL || "https://petstore-backend-jrt5.onrender.com"
+    
+    const response = await fetch(`${apiUrl}/api/auth/login`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ username, password }),
+    })
 
-  const user = ADMIN_USERS.find((u) => u.username === username && u.password === password)
-  if (user) {
+    if (!response.ok) {
+      return null
+    }
+
+    const data = await response.json()
+    
+    // Guardar el token JWT en localStorage
+    if (data.token) {
+      localStorage.setItem("paw-auth-token", data.token)
+    }
+
+    // Crear objeto usuario compatible
+    const user: User = {
+      id: data.username, // Usar username como ID temporal
+      username: data.username || username,
+      role: "admin", // Por ahora todos son admin
+    }
+
     setAuthUser(user)
     return user
+  } catch (error) {
+    console.error("Error en autenticación:", error)
+    return null
   }
-  return null
 }
 
 export function isAuthenticated(): boolean {
@@ -72,6 +98,7 @@ export function setAuthUser(user: User): void {
 
 export function logout(): void {
   localStorage.removeItem("paw-auth-session")
+  localStorage.removeItem("paw-auth-token") // Limpiar token JWT
   // Also remove old auth key for backward compatibility
   localStorage.removeItem("paw-auth-user")
 }
