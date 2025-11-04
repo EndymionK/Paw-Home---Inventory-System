@@ -4,7 +4,7 @@ import { useEffect, useState } from "react"
 import { useRouter, useParams } from "next/navigation"
 import Image from "next/image"
 import { isAuthenticated } from "@/lib/auth"
-import { fetchProducts, convertBackendToFrontend, type Product } from "@/lib/products"
+import { getProductById, type Product } from "@/lib/products"
 import { DashboardLayout } from "@/components/dashboard-layout"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
@@ -23,25 +23,15 @@ export default function ProductDetailPage() {
       return
     }
 
-    loadProduct()
-  }, [router, params.id])
+    const productId = params.id as string
+    const foundProduct = getProductById(productId)
 
-  const loadProduct = async () => {
-    try {
-      const productId = params.id as string
-      const backendProducts = await fetchProducts()
-      const products = backendProducts.map(convertBackendToFrontend)
-      const foundProduct = products.find((p) => p.id === productId)
-
-      if (foundProduct) {
-        setProduct(foundProduct)
-      }
-    } catch (error) {
-      console.error("Error al cargar producto:", error)
-    } finally {
-      setIsLoading(false)
+    if (foundProduct) {
+      setProduct(foundProduct)
     }
-  }
+
+    setIsLoading(false)
+  }, [router, params.id])
 
   if (isLoading) {
     return (

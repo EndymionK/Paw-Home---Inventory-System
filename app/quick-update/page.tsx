@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
 import { isAuthenticated } from "@/lib/auth"
-import { SALES_DATA, type Product, fetchProducts, convertBackendToFrontend, increaseStock, decreaseStock } from "@/lib/products"
+import { getTopSellingProducts, updateProductStock, SALES_DATA, MOCK_PRODUCTS, type Product } from "@/lib/products"
 import { DashboardLayout } from "@/components/dashboard-layout"
 import { QuickUpdateCard } from "@/components/quick-update-card"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
@@ -29,86 +29,37 @@ export default function QuickUpdatePage() {
     setIsLoading(false)
   }, [router])
 
-  const loadProducts = async () => {
-    try {
-      const backendProducts = await fetchProducts()
-      const allProducts = backendProducts.map(convertBackendToFrontend)
+  const loadProducts = () => {
+    // Get top selling products
+    const topSelling = getTopSellingProducts()
 
-      // Get top selling products (using mock sales data for now)
-      const topSelling = SALES_DATA.sort((a, b) => b.sales - a.sales)
-        .slice(0, 5)
-        .map((sale) => allProducts.find((p) => p.id === sale.productId))
-        .filter(Boolean) as Product[]
+    // Get least selling products (reverse order of sales data)
+    const leastSelling = SALES_DATA.sort((a, b) => a.sales - b.sales)
+      .slice(0, 5)
+      .map((sale) => MOCK_PRODUCTS.find((p) => p.id === sale.productId))
+      .filter(Boolean) as Product[]
 
-      // Get least selling products (reverse order of sales data)
-      const leastSelling = SALES_DATA.sort((a, b) => a.sales - b.sales)
-        .slice(0, 5)
-        .map((sale) => allProducts.find((p) => p.id === sale.productId))
-        .filter(Boolean) as Product[]
-
-      setTopSellingProducts(topSelling.filter((p) => !p.isDeleted))
-      setLeastSellingProducts(leastSelling.filter((p) => !p.isDeleted))
-    } catch (error) {
-      console.error("Error al cargar productos:", error)
-    }
+    setTopSellingProducts(topSelling.filter((p) => !p.isDeleted))
+    setLeastSellingProducts(leastSelling.filter((p) => !p.isDeleted))
   }
 
   const handleStockUpdate = async (productId: string, newStock: number, productName: string) => {
     try {
-      // Find current product to calculate difference
-      const currentProduct = topSellingProducts.find(p => p.id === productId) || 
-                            leastSellingProducts.find(p => p.id === productId)
-      
-      if (!currentProduct) {
-        throw new Error("Producto no encontrado")
-      }
-
-      const codigo = parseInt(productId)
-      if (isNaN(codigo)) {
-        throw new Error("ID de producto inválido")
-      }
-
-      const currentStock = currentProduct.stock
-      const difference = newStock - currentStock
-
-      // Call appropriate backend API
-      if (difference > 0) {
-        await increaseStock(codigo, difference)
-      } else if (difference < 0) {
-        await decreaseStock(codigo, Math.abs(difference))
+      const success = updateProductStock(productId, newStock)
+      if (success) {
+        loadProducts()
+        setMessage({
+          type: "success",
+          text: `Stock de "${productName}" actualizado a ${newStock} unidades`,
+        })
+        setTimeout(() => setMessage(null), 3000)
       } else {
-        // No change
-        return
+        throw new Error("No se pudo actualizar el stock")
       }
-
-      // Reload products from backend
-      const backendProducts = await fetchProducts()
-      const convertedProducts = backendProducts.map(convertBackendToFrontend)
-      
-      // Filter for top/least selling using SALES_DATA
-      const topSelling = SALES_DATA.sort((a, b) => b.sales - a.sales)
-        .slice(0, 5)
-        .map((sale) => convertedProducts.find((p) => p.id === sale.productId))
-        .filter(Boolean) as Product[]
-
-      const leastSelling = SALES_DATA.sort((a, b) => a.sales - b.sales)
-        .slice(0, 5)
-        .map((sale) => convertedProducts.find((p) => p.id === sale.productId))
-        .filter(Boolean) as Product[]
-
-      setTopSellingProducts(topSelling)
-      setLeastSellingProducts(leastSelling)
-
-      setMessage({
-        type: "success",
-        text: `Stock de "${productName}" actualizado a ${newStock} unidades`,
-      })
-      setTimeout(() => setMessage(null), 3000)
     } catch (error) {
-      console.error("Error al actualizar stock:", error)
       setMessage({
         type: "error",
-        text: error instanceof Error ? error.message : `Error al actualizar el stock de "${productName}"`,
+        text: `Error al actualizar el stock de "${productName}"`,
       })
       setTimeout(() => setMessage(null), 3000)
     }

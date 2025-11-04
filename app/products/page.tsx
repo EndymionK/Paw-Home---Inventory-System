@@ -4,11 +4,12 @@ import { useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
 import { isAuthenticated } from "@/lib/auth"
 import {
+  getProducts,
+  getDeletedProducts,
+  deleteProduct,
+  restoreProduct,
+  MOCK_PRODUCTS,
   type Product,
-  createProduct,
-  fetchProducts,
-  convertBackendToFrontend,
-  deleteProductAPI,
 } from "@/lib/products"
 import { DashboardLayout } from "@/components/dashboard-layout"
 import { ProductManagementTable } from "@/components/product-management-table"
@@ -43,17 +44,12 @@ export default function ProductsPage() {
     setIsLoading(false)
   }, [router])
 
-  const loadProducts = async () => {
-    try {
-      const backendProducts = await fetchProducts()
-      const activeProducts = backendProducts.map(convertBackendToFrontend)
-      setProducts(activeProducts)
-      setFilteredProducts(activeProducts)
-      // TODO: Implementar endpoint para productos eliminados
-      setDeletedProducts([])
-    } catch (error) {
-      console.error("Error cargando productos:", error)
-    }
+  const loadProducts = () => {
+    const activeProducts = getProducts()
+    const deletedProductsList = getDeletedProducts()
+    setProducts(activeProducts)
+    setDeletedProducts(deletedProductsList)
+    setFilteredProducts(activeProducts)
   }
 
   // Filter and search products
@@ -90,41 +86,22 @@ export default function ProductsPage() {
 
   const handleDeleteProduct = async (productId: string) => {
     try {
-      // Convert string ID to number (codigo)
-      const codigo = parseInt(productId)
-      if (isNaN(codigo)) {
-        throw new Error("ID de producto inválido")
+      const success = deleteProduct(productId)
+      if (success) {
+        loadProducts()
+        setMessage({ type: "success", text: "Producto eliminado exitosamente" })
+        setTimeout(() => setMessage(null), 3000)
+      } else {
+        throw new Error("No se pudo eliminar el producto")
       }
-
-      await deleteProductAPI(codigo)
-      
-      // Reload products from backend
-      const backendProducts = await fetchProducts()
-      const convertedProducts = backendProducts.map(convertBackendToFrontend)
-      setProducts(convertedProducts)
-      setFilteredProducts(convertedProducts)
-      
-      setMessage({ type: "success", text: "Producto eliminado exitosamente" })
-      setTimeout(() => setMessage(null), 3000)
     } catch (error) {
-      console.error("Error al eliminar producto:", error)
-      setMessage({ 
-        type: "error", 
-        text: error instanceof Error ? error.message : "Error al eliminar el producto" 
-      })
-      setTimeout(() => setMessage(null), 5000)
+      setMessage({ type: "error", text: "Error al eliminar el producto" })
+      setTimeout(() => setMessage(null), 3000)
     }
   }
 
   const handleRestoreProduct = async (productId: string) => {
-    // TODO: Implementar endpoint de restauración en el backend
-    setMessage({ 
-      type: "error", 
-      text: "Función de restauración no disponible. Pendiente implementación en backend." 
-    })
-    setTimeout(() => setMessage(null), 3000)
-    
-    /* try {
+    try {
       const success = restoreProduct(productId)
       if (success) {
         loadProducts()
@@ -136,40 +113,22 @@ export default function ProductsPage() {
     } catch (error) {
       setMessage({ type: "error", text: "Error al recuperar el producto" })
       setTimeout(() => setMessage(null), 3000)
-    } */
+    }
   }
 
-  const handleCreateProduct = async (newProduct: Omit<Product, "id" | "isDeleted" | "createdAt" | "updatedAt">) => {
-    try {
-      // Convert frontend format to backend format
-      const backendData = {
-        nombre: newProduct.name,
-        cantidad: newProduct.stock,
-        precio: newProduct.price,
-        idProveedor: typeof newProduct.supplier === 'number' ? newProduct.supplier : 1, // Use hash or default to 1
-        umbralMinimo: newProduct.minStock > 0 ? newProduct.minStock : undefined,
-        imagen: newProduct.image || undefined,
-        descripcion: newProduct.characteristics || undefined,
-      }
-
-      const createdProduct = await createProduct(backendData)
-      
-      // Reload products from backend
-      const backendProducts = await fetchProducts()
-      const convertedProducts = backendProducts.map(convertBackendToFrontend)
-      setProducts(convertedProducts)
-      setFilteredProducts(convertedProducts)
-      
-      setMessage({ type: "success", text: "Producto creado exitosamente" })
-      setTimeout(() => setMessage(null), 3000)
-    } catch (error) {
-      console.error("Error al crear producto:", error)
-      setMessage({ 
-        type: "error", 
-        text: error instanceof Error ? error.message : "Error al crear el producto" 
-      })
-      setTimeout(() => setMessage(null), 5000)
+  const handleCreateProduct = (newProduct: Omit<Product, "id" | "isDeleted" | "createdAt" | "updatedAt">) => {
+    const product: Product = {
+      ...newProduct,
+      id: (MOCK_PRODUCTS.length + 1).toString(),
+      isDeleted: false,
+      createdAt: new Date(),
+      updatedAt: new Date(),
     }
+
+    MOCK_PRODUCTS.push(product)
+    loadProducts()
+    setMessage({ type: "success", text: "Producto creado exitosamente" })
+    setTimeout(() => setMessage(null), 3000)
   }
 
   if (isLoading) {
